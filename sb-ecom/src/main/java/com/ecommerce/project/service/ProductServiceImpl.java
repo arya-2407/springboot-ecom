@@ -2,10 +2,13 @@
 
     import com.ecommerce.project.exceptions.APIException;
     import com.ecommerce.project.exceptions.ResourceNotFoundException;
+    import com.ecommerce.project.model.Cart;
     import com.ecommerce.project.model.Category;
     import com.ecommerce.project.model.Product;
+    import com.ecommerce.project.payload.CartDTO;
     import com.ecommerce.project.payload.ProductDTO;
     import com.ecommerce.project.payload.ProductResponse;
+    import com.ecommerce.project.repositories.CartRepository;
     import com.ecommerce.project.repositories.CategoryRepository;
     import com.ecommerce.project.repositories.ProductRepository;
     import org.modelmapper.ModelMapper;
@@ -20,6 +23,7 @@
 
     import java.io.IOException;
     import java.util.List;
+    import java.util.stream.Collectors;
 
 
     @Service
@@ -36,6 +40,12 @@
 
         @Autowired
         private FileService fileService;
+
+        @Autowired
+        private CartRepository cartRepository;
+
+        @Autowired
+        private CartService cartService;
 
         @Value("${project.image}")
         private String path;
@@ -159,6 +169,23 @@
                     ((product.getDiscount()*0.01) * product.getPrice());
             existingProduct.setSpecialPrice(specialPrice);
             Product savedProduct = productRepository.save(existingProduct);
+
+            List<Cart> carts = cartRepository.findCartsByProductId(productId);
+
+            List<CartDTO> cartDTOs = carts.stream().map(cart -> {
+                CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
+
+                List<ProductDTO> products = cart.getCartItems().stream()
+                        .map(p -> modelMapper.map(p.getProduct(), ProductDTO.class)).collect(Collectors.toList());
+
+                cartDTO.setProducts(products);
+
+                return cartDTO;
+
+            }).toList();
+
+            cartDTOs.forEach(cart -> cartService.updateProductInCarts(cart.getCartId(), productId));
+
             return modelMapper.map(savedProduct,ProductDTO.class);
         }
 
