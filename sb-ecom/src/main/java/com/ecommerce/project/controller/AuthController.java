@@ -115,4 +115,31 @@ public class AuthController {
         userRepository.save(user);
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
+
+    @GetMapping("/username")
+    public String currentUsername(Authentication authentication){
+        if(authentication!=null){
+            return authentication.getName();
+        }else{
+            return "no user authenticated in this session";
+        }
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<?> currentUserDetails(Authentication authentication){
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+        UserInfoResponse userInfoResponse = new UserInfoResponse(userDetails.getId(),userDetails.getUsername(),roles);
+        return ResponseEntity.ok().body(userInfoResponse);
+    }
+
+    @PostMapping("/signout")
+    public ResponseEntity<?> signoutUser(Authentication authentication){
+        String username = authentication.getName();
+        ResponseCookie cookie = jwtUtils.getCleanJwtCookie();
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,cookie.toString())
+                .body(new MessageResponse(username + " has been signed out!"));
+    }
 }
