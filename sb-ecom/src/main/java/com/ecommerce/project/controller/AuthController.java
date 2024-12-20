@@ -1,11 +1,17 @@
 package com.ecommerce.project.controller;
 
+import com.ecommerce.project.model.AppRole;
+import com.ecommerce.project.model.Role;
+import com.ecommerce.project.model.User;
 import com.ecommerce.project.repositories.RoleRepository;
 import com.ecommerce.project.repositories.UserRepository;
 import com.ecommerce.project.security.jwt.JwtUtils;
 import com.ecommerce.project.security.request.LoginRequest;
+import com.ecommerce.project.security.request.SignUpRequest;
+import com.ecommerce.project.security.response.MessageResponse;
 import com.ecommerce.project.security.response.UserInfoResponse;
 import com.ecommerce.project.security.services.UserDetailsImpl;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +28,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
+@RequestMapping("/api/auth")
 public class AuthController {
 
     @Autowired
@@ -60,5 +67,49 @@ public class AuthController {
                 .toList();
         UserInfoResponse userInfoResponse = new UserInfoResponse(userDetails.getId(),userDetails.getUsername(),roles,jwtToken);
         return ResponseEntity.ok(userInfoResponse);
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest){
+        if(userRepository.existsByUsername(signUpRequest.getUsername())){
+            return ResponseEntity.badRequest().body(new MessageResponse("Username taken!"));
+        }
+        if(userRepository.existsByEmail(signUpRequest.getEmail())){
+            return ResponseEntity.badRequest().body(new MessageResponse("An account with this email already exists!"));
+        }
+
+        User user = new User(signUpRequest.getUsername(), signUpRequest.getEmail(), encoder.encode(signUpRequest.getPassword()));
+
+        Set<String> strRoles = signUpRequest.getRole();
+        Set<Role> roles = new HashSet<>();
+
+        if(strRoles==null){
+            Role userRole = roleRepository.findByRoleName(AppRole.ROLE_USER).
+                    orElseThrow(() -> new RuntimeException("Error : Role Not Found"));
+            roles.add(userRole);
+        }else {
+            strRoles.forEach(role->{
+                switch(role){
+                    case "admin":
+                        Role adminRole = roleRepository.findByRoleName(AppRole.ROLE_ADMIN).
+                                orElseThrow(() -> new RuntimeException("Error : Role Not Found"));
+                        roles.add(adminRole);
+                        break;
+                    case "seller":
+                        Role sellerRole = roleRepository.findByRoleName(AppRole.ROLE_SELLER).
+                                orElseThrow(() -> new RuntimeException("Error : Role Not Found"));
+                        roles.add(sellerRole);
+                        break;
+                    default:
+                        Role userRole = roleRepository.findByRoleName(AppRole.ROLE_USER).
+                                orElseThrow(() -> new RuntimeException("Error : Role Not Found"));
+                        roles.add(userRole);
+                        break;
+                }
+            });
+        }
+        user.setRoles(roles);
+        userRepository.save(user);
+        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
 }
