@@ -22,3 +22,9 @@ This repository contains the backend implementation of an e-commerce application
 - **MySQL**: Relational database management system.
 - **Spring Security**: For securing the application.
 - **JWT**: JSON Web Tokens for authentication.
+
+---
+## Further Developments
+
+- I would love to collaborate with a frontend developer and make this project into a full stack webapp!
+- email me at aryapofficial@gmail.com for any feedback or potential collaboration!
