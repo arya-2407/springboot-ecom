@@ -19,7 +19,7 @@ This repository contains the backend implementation of an e-commerce application
 - **Java**: Programming language.
 - **Spring Boot**: Framework for building the backend.
 - **Spring Data JPA**: For interacting with the database.
-- **MySQL**: Relational database management system.
+- **PostgreSQL**: Relational database management system.
 - **Spring Security**: For securing the application.
 - **JWT**: JSON Web Tokens for authentication.
 
